@@ -1,0 +1,52 @@
+#!/bin/bash
+SPEEDTEST_SERVER=${SPEEDTEST_SERVER}
+SPEEDTEST_LOOKUPINTERVAL=${SPEEDTEST_LOOKUPINTERVAL:-21600}
+MQTT_TOPICPREFIX=${MQTT_TOPICPREFIX:-home/speedtest}
+MQTT_DISCOVERY=${MQTT_DISCOVERY=-true}
+MQTT_DISCOVERYPREFIX=${MQTT_DISCOVERYPREFIX:-homeassistant}
+MQTT_DISCOVERYNAME=${MQTT_DISCOVERYNAME:-speedtest}
+MQTT_CLIENTID=${MQTT_CLIENTID:-DefaultSpeedtest2MqttClientID}
+MQTT_BROKER=${MQTT_BROKER:-test.mosquitto.org}
+MQTT_USERNAME=${MQTT_USERNAME}
+MQTT_PASSWORD=${MQTT_PASSWORD}
+
+if [[ $SPEEDTEST_SERVER != "" ]]; then
+    SPEEDTEST_SERVER="--server $SPEEDTEST_SERVER"
+fi
+
+if [[ $MQTT_USERNAME != "" ]]; then
+    MQTT_USERNAME="-u '$MQTT_USERNAME'"
+fi
+
+if [[ $MQTT_PASSWORD != "" ]]; then
+    MQTT_PASSWORD="-P '$MQTT_PASSWORD'"
+fi
+
+MOSQUITTO_PUB=$(which mosquitto_pub)
+MOSQUITTO_PUB_CMD="$MOSQUITTO_PUB -h '$MQTT_BROKER' $MQTT_USERNAME $MQTT_PASSWORD -r"
+
+if [[ "$MQTT_DISCOVERY" == "true" ]]; then
+    echo "Publishing discovery"
+    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_DISCOVERYPREFIX/sensor/$MQTT_DISCOVERYNAME/${MQTT_DISCOVERYNAME}_download/config' -m '{\"icon\":\"mdi:speedometer\",\"name\":\"$MQTT_DISCOVERYNAME download\",\"state_topic\":\"$MQTT_TOPICPREFIX/download/state\",\"unique_id\":\"speedtest.$MQTT_DISCOVERYNAME.download\",\"unit_of_measurement\":\"Mbps\"}'"
+    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_DISCOVERYPREFIX/sensor/$MQTT_DISCOVERYNAME/${MQTT_DISCOVERYNAME}_upload/config' -m '{\"icon\":\"mdi:speedometer\",\"name\":\"$MQTT_DISCOVERYNAME upload\",\"state_topic\":\"$MQTT_TOPICPREFIX/upload/state\",\"unique_id\":\"speedtest.$MQTT_DISCOVERYNAME.upload\",\"unit_of_measurement\":\"Mbps\"}'"
+    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_DISCOVERYPREFIX/sensor/$MQTT_DISCOVERYNAME/${MQTT_DISCOVERYNAME}_ping/config' -m '{\"icon\":\"mdi:speedometer\",\"name\":\"$MQTT_DISCOVERYNAME ping\",\"state_topic\":\"$MQTT_TOPICPREFIX/ping/state\",\"unique_id\":\"speedtest.$MQTT_DISCOVERYNAME.ping\",\"unit_of_measurement\":\"ms\"}'"
+fi
+
+SPEEDTEST_CLI=$(which speedtest-cli)
+
+while true; do
+    OUTPUT=$($SPEEDTEST_CLI --json $SPEEDTEST_SERVER)
+    download="$(echo $OUTPUT | jq '.download / 1000 / 1000' | xargs printf '%.1f\n')" 
+    upload="$(echo $OUTPUT | jq '.upload / 1000 / 1000' | xargs printf '%.1f\n')"
+    ping="$(echo $OUTPUT | jq '.ping' | xargs printf '%.0f\n')"
+
+    echo "Publishing stats..."
+    echo -e "Ping: $ping ms\nDownload: $download Mbps\nUpload: $upload Mbps"
+    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_TOPICPREFIX/download/state' -m '$download'"
+    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_TOPICPREFIX/upload/state' -m '$upload'"
+    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_TOPICPREFIX/ping/state' -m '$ping'"
+
+    echo "Sleeping for $SPEEDTEST_LOOKUPINTERVAL seconds"
+    sleep $SPEEDTEST_LOOKUPINTERVAL
+done
+
