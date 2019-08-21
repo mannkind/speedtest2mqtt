@@ -1,0 +1,31 @@
+if: tag IS blank # Don't build tags
+
+dist: xenial
+language: go
+go:
+  - "1.12"
+env:
+  - GO111MODULE="on" DOCKER_CLI_EXPERIMENTAL="enabled"
+addons:
+  apt:
+    packages:
+      - docker-ce
+before_install:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - sudo docker run --privileged linuxkit/binfmt:v0.6
+jobs:
+  include:
+    - stage: deploy-image-dev
+      script:
+        - make docker docker-push DOCKER_VERSION_ADDTL=-develop
+    - stage: deploy-image
+      script:
+        - make docker docker-push
+stages:
+  - name: deploy-image-dev
+    if: type = push AND branch != master
+  - name: deploy-image
+    if: type = push AND branch = master
+deploy:
+  - provider: script
+    script: make docker docker-push
