@@ -27,8 +27,8 @@ MOSQUITTO_PUB_CMD="$MOSQUITTO_PUB -h '$MQTT_BROKER' $MQTT_USERNAME $MQTT_PASSWOR
 
 if [[ "$MQTT_DISCOVERY" == "true" ]]; then
     echo "Publishing discovery"
-    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_DISCOVERYPREFIX/sensor/$MQTT_DISCOVERYNAME/${MQTT_DISCOVERYNAME}_download/config' -m '{\"icon\":\"mdi:speedometer\",\"name\":\"$MQTT_DISCOVERYNAME download\",\"state_topic\":\"$MQTT_TOPICPREFIX/download/state\",\"unique_id\":\"speedtest.$MQTT_DISCOVERYNAME.download\",\"unit_of_measurement\":\"Mbps\"}'"
-    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_DISCOVERYPREFIX/sensor/$MQTT_DISCOVERYNAME/${MQTT_DISCOVERYNAME}_upload/config' -m '{\"icon\":\"mdi:speedometer\",\"name\":\"$MQTT_DISCOVERYNAME upload\",\"state_topic\":\"$MQTT_TOPICPREFIX/upload/state\",\"unique_id\":\"speedtest.$MQTT_DISCOVERYNAME.upload\",\"unit_of_measurement\":\"Mbps\"}'"
+    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_DISCOVERYPREFIX/sensor/$MQTT_DISCOVERYNAME/${MQTT_DISCOVERYNAME}_download/config' -m '{\"icon\":\"mdi:speedometer\",\"name\":\"$MQTT_DISCOVERYNAME download\",\"state_topic\":\"$MQTT_TOPICPREFIX/download/state\",\"unique_id\":\"speedtest.$MQTT_DISCOVERYNAME.download\",\"unit_of_measurement\":\"Mbit/s\"}'"
+    eval "$MOSQUITTO_PUB_CMD -t '$MQTT_DISCOVERYPREFIX/sensor/$MQTT_DISCOVERYNAME/${MQTT_DISCOVERYNAME}_upload/config' -m '{\"icon\":\"mdi:speedometer\",\"name\":\"$MQTT_DISCOVERYNAME upload\",\"state_topic\":\"$MQTT_TOPICPREFIX/upload/state\",\"unique_id\":\"speedtest.$MQTT_DISCOVERYNAME.upload\",\"unit_of_measurement\":\"Mbit/s\"}'"
     eval "$MOSQUITTO_PUB_CMD -t '$MQTT_DISCOVERYPREFIX/sensor/$MQTT_DISCOVERYNAME/${MQTT_DISCOVERYNAME}_ping/config' -m '{\"icon\":\"mdi:speedometer\",\"name\":\"$MQTT_DISCOVERYNAME ping\",\"state_topic\":\"$MQTT_TOPICPREFIX/ping/state\",\"unique_id\":\"speedtest.$MQTT_DISCOVERYNAME.ping\",\"unit_of_measurement\":\"ms\"}'"
 fi
 
